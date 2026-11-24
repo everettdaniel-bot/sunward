@@ -53,6 +53,33 @@ button:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
 .chip.spin svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* colour sheet */
+.sheet-bg{position:fixed; inset:0; background:rgba(5,10,20,.45); z-index:40}
+.sheet{position:fixed; left:0; right:0; bottom:0; z-index:41; max-height:86vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:var(--surface); color:var(--ink); border-radius:22px 22px 0 0; box-shadow:0 -10px 40px rgba(0,0,0,.25);
+  padding:6px max(18px, env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(18px, env(safe-area-inset-left,0px))}
+.sheet-inner{max-width:480px; margin:0 auto}
+.sheet-grab{width:40px; height:5px; border-radius:3px; background:var(--line); margin:4px auto 10px}
+.sheet-h{display:flex; align-items:center; justify-content:space-between; gap:10px; position:sticky; top:-6px; background:var(--surface); padding:6px 0 8px; z-index:1}
+.sheet-h h2{margin:0; font:600 20px/1.2 var(--f-display)}
+.sheet-h button{border:0; background:var(--ink); color:var(--surface); border-radius:999px; padding:8px 16px; font-weight:600; font-size:14px}
+.sheet p.hint{margin:0 0 6px; font-size:13px; color:var(--muted)}
+.crow{padding:14px 0; border-top:1px solid var(--line)}
+.crow:first-of-type{border-top:0}
+.crow-h{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
+.crow-h b{font:600 15.5px/1.3 var(--f-display)}
+.crow-h button{border:0; background:none; color:var(--cool); font-weight:600; font-size:13px; padding:4px 0}
+.crow-h button[disabled]{color:var(--muted); opacity:.5}
+.crow small{display:block; font-size:12px; color:var(--muted); margin-top:1px}
+.cpick{display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:8px; margin-top:10px; align-items:stretch}
+.cpick label{display:flex; align-items:center; gap:7px; border:1px solid var(--line); border-radius:12px; padding:6px 8px; font-size:13px; font-weight:500; min-width:0}
+.cpick input[type=color]{-webkit-appearance:none; appearance:none; width:30px; height:30px; flex:none; border:1px solid var(--line); border-radius:8px; padding:0; background:none; cursor:pointer}
+.cpick input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.cpick input[type=color]::-webkit-color-swatch{border:0; border-radius:7px}
+.cprev{border-radius:12px; display:flex; flex-direction:column; justify-content:center; padding:6px 10px; font:600 14px/1.2 var(--f-display); border:1px solid var(--line); min-width:0}
+.cprev span{font:400 11px/1.3 var(--f-body); opacity:.7}
+.cwarn{font-size:12px; color:var(--warm); margin-top:6px; font-weight:500}
+.sheet .resetall{margin-top:12px; width:100%; border:1px solid var(--line); background:transparent; border-radius:12px; padding:11px; font-weight:600; font-size:14px; color:var(--warm)}
 .notice{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--warm); border-radius:12px; padding:12px 14px; font-size:13.5px}
 .notice b{display:block; margin-bottom:2px}
 .notice button{margin-top:8px; border:0; background:var(--ink); color:var(--bg); border-radius:8px; padding:7px 14px; font-weight:600; font-size:13px}
@@ -65,16 +92,16 @@ button:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
 .hero-main{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
 .temp{font:600 88px/0.9 var(--f-display); letter-spacing:-3px; font-variant-numeric:tabular-nums}
 .temp sup{font-size:34px; letter-spacing:0; vertical-align:top; position:relative; top:8px; margin-left:2px; font-weight:500}
-.hero-icon{width:76px; height:76px; flex:none; color:#fff}
+.hero-icon{width:76px; height:76px; flex:none; color:currentColor}
 .cond{font:600 19px/1.25 var(--f-display); margin:12px 0 2px}
 .feels{font-size:14px; opacity:.88}
-.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:12px 8px; margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.25)}
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:12px 8px; margin-top:16px; padding-top:14px; border-top:1px solid color-mix(in srgb, currentColor 25%, transparent)}
 .stat span{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; opacity:.78}
 .stat{min-width:0}
 .stat b{font:600 14.5px/1.3 var(--f-display); font-variant-numeric:tabular-nums; white-space:nowrap}
 
 /* panels */
-.panel{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px}
+.panel{color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px}
 .panel-h{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:10px}
 .panel-h h2{margin:0; font:600 12px/1 var(--f-body); text-transform:uppercase; letter-spacing:.1em; color:var(--muted)}
 .panel-h small{font-size:12.5px; color:var(--muted)}
@@ -161,6 +188,9 @@ footer a{color:inherit}
       <h1 id="place">Locating…</h1>
       <p id="updated">Finding your position</p>
     </div>
+    <button type="button" class="chip" id="customBtn" aria-label="Customise colours" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1.2" fill="currentColor"/><circle cx="10.5" cy="7.2" r="1.2" fill="currentColor"/><circle cx="15" cy="7.5" r="1.2" fill="currentColor"/></svg>
+    </button>
     <button type="button" class="chip" id="refresh" aria-label="Refresh">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
     </button>
@@ -185,13 +215,13 @@ footer a{color:inherit}
     </div>
   </section>
 
-  <section class="panel" aria-label="Today hour by hour">
+  <section class="panel" data-box="hourly" aria-label="Today hour by hour">
     <div class="panel-h"><h2>Today, hour by hour</h2><small id="mmTotal"></small></div>
     <div class="hours" id="hours"><div class="hr skeleton"><span class="hr-t">--</span></div></div>
     <div class="hours-key"><span>Bars show precipitation in mm per hour</span><span>Swipe for more</span></div>
   </section>
 
-  <section class="panel" aria-label="Sunrise and sunset">
+  <section class="panel" data-box="sun" aria-label="Sunrise and sunset">
     <div class="panel-h"><h2>Sunrise &amp; sunset</h2><small id="today">Today</small></div>
     <div class="risesets">
       <div class="rs"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 4v5M9.5 6.5 12 4l2.5 2.5"/></svg>Sunrise</span><b id="rise">--</b></div>
@@ -215,7 +245,7 @@ footer a{color:inherit}
     </div>
   </section>
 
-  <section class="panel" aria-label="Where the sun is now">
+  <section class="panel" data-box="pos" aria-label="Where the sun is now">
     <div class="panel-h"><h2>Where the sun is</h2><small id="posTime">now</small></div>
     <div class="pos">
       <div><span>Direction</span><b id="az">--</b></div>
@@ -229,7 +259,7 @@ footer a{color:inherit}
     <p class="dial-note" id="dialNote">The centre is straight overhead and the edge is the horizon. The line shows the sun's path across your sky today.</p>
   </section>
 
-  <section class="panel" aria-label="Three day outlook">
+  <section class="panel" data-box="outlook" aria-label="Three day outlook">
     <div class="panel-h"><h2>3-day outlook</h2></div>
     <div class="days" id="days"><div class="day skeleton"><div class="day-name"><b>--</b></div></div></div>
   </section>
@@ -239,6 +269,16 @@ footer a{color:inherit}
     Weather from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Sun position calculated on your phone.
   </footer>
 </main>
+<div class="sheet-bg" id="sheetBg" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-h"><h2 id="sheetTitle">Colours</h2><button type="button" id="sheetDone">Done</button></div>
+    <p class="hint">Tap a swatch to choose a colour for each box. Your choices are saved on this phone.</p>
+    <div id="sheetRows"></div>
+    <button type="button" class="resetall" id="resetAll">Reset all colours</button>
+  </div>
+</section>
 
 <script>
 (() => {
@@ -809,6 +849,110 @@ function renderAltitude(){
 
 /* ---------- boot ---------- */
 $('refresh').onclick = () => refresh();
+
+/* ---------- customisable colours ---------- */
+const BOXES = [
+  {id:'page',    name:'Page',                 note:'Background behind the boxes, and the header and footer text'},
+  {id:'hero',    name:'Current conditions',   note:'Default background follows the sun'},
+  {id:'hourly',  name:'Today, hour by hour'},
+  {id:'sun',     name:'Sunrise, sunset & moon'},
+  {id:'pos',     name:'Where the sun is'},
+  {id:'outlook', name:'3-day outlook'}
+];
+S.theme = store.get('theme') || {};
+const boxEl = id => id === 'hero' ? $('hero') : document.querySelector(`[data-box="${id}"]`);
+const hexRe = /^#[0-9a-f]{6}$/i;
+const toHex = v => {
+  v = (v || '').trim(); if (hexRe.test(v)) return v.toLowerCase();
+  const c = document.createElement('canvas').getContext('2d'); c.fillStyle = '#000'; c.fillStyle = v;
+  return hexRe.test(c.fillStyle) ? c.fillStyle : '#000000';
+};
+function lum(hex){
+  const n = parseInt(hex.slice(1), 16), ch = [n>>16 & 255, n>>8 & 255, n & 255].map(v => { v/=255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); });
+  return .2126*ch[0] + .7152*ch[1] + .0722*ch[2];
+}
+const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+function setPanelVars(el, bg, fg){
+  const props = ['--surface','--ink','--muted','--line','--bg'];
+  props.forEach(p => el.style.removeProperty(p));
+  if (!bg && !fg) return;
+  if (bg) el.style.setProperty('--surface', bg);
+  if (fg) el.style.setProperty('--ink', fg);
+  el.style.setProperty('--muted', 'color-mix(in srgb, var(--ink) 66%, var(--surface))');
+  el.style.setProperty('--line', 'color-mix(in srgb, var(--ink) 16%, var(--surface))');
+  el.style.setProperty('--bg', 'color-mix(in srgb, var(--ink) 7%, var(--surface))');
+}
+function applyTheme(){
+  const t = S.theme;
+  const pg = t.page || {};
+  document.body.style.background = pg.bg || '';
+  [document.querySelector('header.top'), document.querySelector('footer')].forEach(el => {
+    el.style.removeProperty('--ink'); el.style.removeProperty('--muted'); el.style.color = '';
+    if (pg.fg){ el.style.setProperty('--ink', pg.fg); el.style.setProperty('--muted', 'color-mix(in srgb, var(--ink) 72%, transparent)'); el.style.color = pg.fg; }
+  });
+  const h = t.hero || {};
+  $('hero').style.background = h.bg || '';
+  $('hero').style.color = h.fg || '';
+  ['hourly','sun','pos','outlook'].forEach(id => { const c = t[id] || {}; setPanelVars(boxEl(id), c.bg, c.fg); });
+}
+function currentColours(id){
+  const t = S.theme[id] || {};
+  const root = getComputedStyle(document.documentElement);
+  if (id === 'page') return { bg: t.bg || toHex(root.getPropertyValue('--bg')), fg: t.fg || toHex(root.getPropertyValue('--ink')) };
+  if (id === 'hero') return { bg: t.bg || toHex($('hero').style.getPropertyValue('--sky1') || '#245fa6'), fg: t.fg || '#ffffff' };
+  const cs = getComputedStyle(boxEl(id));
+  return { bg: t.bg || toHex(cs.getPropertyValue('--surface')), fg: t.fg || toHex(cs.getPropertyValue('--ink')) };
+}
+function buildSheet(){
+  $('sheetRows').innerHTML = BOXES.map(b => `
+    <div class="crow" data-row="${b.id}">
+      <div class="crow-h"><b>${esc(b.name)}</b><button type="button" data-reset="${b.id}">Reset</button></div>
+      ${b.note ? `<small>${esc(b.note)}</small>` : ''}
+      <div class="cpick">
+        <label><input type="color" id="c-${b.id}-bg" data-box="${b.id}" data-k="bg" aria-label="${esc(b.name)} background">Background</label>
+        <label><input type="color" id="c-${b.id}-fg" data-box="${b.id}" data-k="fg" aria-label="${esc(b.name)} text">Text</label>
+        <div class="cprev" id="p-${b.id}">Aa 12°<span>Preview</span></div>
+      </div>
+      <div class="cwarn" id="w-${b.id}" hidden>These colours are hard to read together.</div>
+    </div>`).join('');
+  $('sheetRows').querySelectorAll('input[type=color]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const id = inp.dataset.box, k = inp.dataset.k;
+      S.theme[id] = Object.assign({}, S.theme[id], {[k]: inp.value});
+      applyTheme(); syncRow(id, false);
+    });
+    inp.addEventListener('change', () => store.set('theme', S.theme));
+  });
+  $('sheetRows').querySelectorAll('[data-reset]').forEach(btn => btn.onclick = () => {
+    delete S.theme[btn.dataset.reset]; store.set('theme', S.theme); applyTheme(); syncRow(btn.dataset.reset, true);
+  });
+}
+function syncRow(id, setInputs){
+  const c = currentColours(id);
+  if (setInputs !== false){ $(`c-${id}-bg`).value = c.bg; $(`c-${id}-fg`).value = c.fg; }
+  const pv = $(`p-${id}`); pv.style.background = c.bg; pv.style.color = c.fg;
+  $(`w-${id}`).hidden = contrast(c.bg, c.fg) >= 3;
+  const custom = S.theme[id] && (S.theme[id].bg || S.theme[id].fg);
+  document.querySelector(`[data-reset="${id}"]`).disabled = !custom;
+}
+let lastFocus = null;
+function openSheet(){
+  if (!$('sheetRows').children.length) buildSheet();
+  BOXES.forEach(b => syncRow(b.id, true));
+  lastFocus = document.activeElement;
+  $('sheetBg').hidden = false; $('sheet').hidden = false; $('sheetDone').focus();
+}
+function closeSheet(){
+  store.set('theme', S.theme);
+  $('sheetBg').hidden = true; $('sheet').hidden = true;
+  if (lastFocus) lastFocus.focus();
+}
+$('customBtn').onclick = openSheet;
+$('sheetDone').onclick = closeSheet;
+$('sheetBg').onclick = closeSheet;
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
+$('resetAll').onclick = () => { S.theme = {}; store.set('theme', S.theme); applyTheme(); BOXES.forEach(b => syncRow(b.id, true)); };
+applyTheme();
 $('compassBtn').onclick = () => toggleCompass();
 
 const last = store.get('last');
