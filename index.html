@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sunward</title>
+<meta name="description" content="Weather, sunrise, sunset and the sun's position wherever you are.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sunward">
+<meta name="theme-color" content="#0b121c">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one phone-width column. A sky band whose colour follows the real sun, then sun, sky-chart and outlook panels. */
+:root{
+  --bg:#edf1f5; --surface:#ffffff; --ink:#132235; --muted:#5a6a7e; --line:#d8e0e9;
+  --sun:#e8892b; --sun-soft:#f6c27a; --path:#b9c6d4; --cool:#3f7fc4; --warm:#e0703a;
+  --sky1:#2a6ab3; --sky2:#5fa3e0;
+  --f-display:"Familjen Grotesk","Avenir Next","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0b121c; --surface:#131d2a; --ink:#e6ecf3; --muted:#8c9cb1; --line:#223245;
+    --sun:#f3a443; --sun-soft:#8a5a22; --path:#33465d; --cool:#6ea6e6; --warm:#f08a55; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink); font:15px/1.45 var(--f-body);
+  -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+  padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+main{max-width:480px; margin:0 auto; display:flex; flex-direction:column; gap:14px}
+button{font:inherit; color:inherit; cursor:pointer}
+button:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
+
+/* top bar */
+.top{display:flex; align-items:center; gap:10px; padding-top:10px}
+.place{flex:1; min-width:0}
+.place h1{font:600 20px/1.2 var(--f-display); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-wrap:balance}
+.place p{margin:2px 0 0; font-size:12.5px; color:var(--muted)}
+.chip{border:1px solid var(--line); background:var(--surface); border-radius:999px; height:36px; padding:0 12px; display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:13px}
+.chip svg{width:16px; height:16px}
+.chip.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.units{display:inline-flex; border:1px solid var(--line); border-radius:999px; background:var(--surface); padding:3px}
+.units button{border:0; background:transparent; height:28px; min-width:34px; border-radius:999px; font-weight:600; font-size:13px; color:var(--muted)}
+.units button[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+
+.notice{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--warm); border-radius:12px; padding:12px 14px; font-size:13.5px}
+.notice b{display:block; margin-bottom:2px}
+.notice button{margin-top:8px; border:0; background:var(--ink); color:var(--bg); border-radius:8px; padding:7px 14px; font-weight:600; font-size:13px}
+
+/* sky hero */
+.hero{
+  position:relative; overflow:hidden; border-radius:22px; color:#fff; padding:20px 20px 18px;
+  background:linear-gradient(165deg, var(--sky1), var(--sky2)); transition:background .8s;
+}
+.hero-main{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+.temp{font:600 88px/0.9 var(--f-display); letter-spacing:-3px; font-variant-numeric:tabular-nums}
+.temp sup{font-size:34px; letter-spacing:0; vertical-align:top; position:relative; top:8px; margin-left:2px; font-weight:500}
+.hero-icon{width:76px; height:76px; flex:none; color:#fff}
+.cond{font:600 19px/1.25 var(--f-display); margin:12px 0 2px}
+.feels{font-size:14px; opacity:.88}
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.25)}
+.stat span{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; opacity:.78}
+.stat{min-width:0}
+.stat b{font:600 14.5px/1.3 var(--f-display); font-variant-numeric:tabular-nums; white-space:nowrap}
+
+/* panels */
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px}
+.panel-h{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:10px}
+.panel-h h2{margin:0; font:600 12px/1 var(--f-body); text-transform:uppercase; letter-spacing:.1em; color:var(--muted)}
+.panel-h small{font-size:12.5px; color:var(--muted)}
+
+.risesets{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.rs span{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted)}
+.rs span svg{width:18px; height:18px; color:var(--sun)}
+.rs b{display:block; font:600 30px/1.1 var(--f-display); font-variant-numeric:tabular-nums; letter-spacing:-.5px}
+.rs b small{font-size:15px; font-weight:500; margin-left:3px; letter-spacing:0}
+.rs:last-child{text-align:right}
+.rs:last-child span{justify-content:flex-end}
+.daylen{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--muted); margin-top:8px}
+.daylen strong{color:var(--ink); font-weight:600}
+.arc{margin-top:10px}
+.arc svg{display:block; width:100%; height:auto}
+.golden{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; font-size:12.5px; color:var(--muted)}
+.golden div:last-child{text-align:right}
+.golden b{color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums}
+
+/* sun position */
+.pos{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:6px}
+.pos span{display:block; font-size:12.5px; color:var(--muted)}
+.pos b{font:500 26px/1.15 var(--f-data); font-variant-numeric:tabular-nums}
+.pos b small{font:600 14px var(--f-body); margin-left:4px; color:var(--muted)}
+.pos div:last-child{text-align:right}
+.dialwrap{position:relative; max-width:300px; margin:4px auto 0}
+.dialwrap svg{display:block; width:100%; height:auto}
+#dial{transition:transform .15s linear}
+.facing{font-size:14px; text-align:center; margin-top:8px; min-height:21px; font-weight:500}
+.dial-actions{display:flex; justify-content:center; margin-top:10px}
+.dial-note{font-size:12px; color:var(--muted); text-align:center; margin:8px 0 0}
+
+/* outlook */
+.days{display:flex; flex-direction:column}
+.day{display:grid; grid-template-columns:78px 34px 1fr; gap:10px; align-items:center; padding:11px 0; border-top:1px solid var(--line)}
+.day:first-child{border-top:0; padding-top:2px}
+.day-name b{display:block; font:600 16px/1.2 var(--f-display)}
+.day-name span{font-size:12px; color:var(--muted)}
+.day svg.wx{width:34px; height:34px; color:var(--ink)}
+.day-body{min-width:0}
+.day-cond{display:flex; justify-content:space-between; gap:8px; font-size:13.5px}
+.day-cond em{font-style:normal; color:var(--cool); font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap}
+.range{display:grid; grid-template-columns:34px 1fr 34px; gap:8px; align-items:center; margin-top:6px; font-variant-numeric:tabular-nums; font-weight:600; font-size:14px}
+.range .lo{color:var(--muted); text-align:right}
+.bar{height:6px; border-radius:3px; background:var(--line); position:relative}
+.bar i{position:absolute; top:0; bottom:0; border-radius:3px; background:linear-gradient(90deg,var(--cool),var(--warm))}
+.day-sun{font-size:12px; color:var(--muted); margin-top:5px; font-variant-numeric:tabular-nums}
+
+footer{font-size:11.5px; color:var(--muted); text-align:center; line-height:1.6}
+footer a{color:inherit}
+.skeleton{opacity:.45}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important; animation:none!important} }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="place">
+      <h1 id="place">Locating…</h1>
+      <p id="updated">Finding your position</p>
+    </div>
+    <div class="units" role="group" aria-label="Temperature units">
+      <button type="button" id="uF" aria-pressed="true">°F</button>
+      <button type="button" id="uC" aria-pressed="false">°C</button>
+    </div>
+    <button type="button" class="chip" id="refresh" aria-label="Refresh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+    </button>
+  </header>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <section class="hero" id="hero" aria-label="Current conditions">
+    <div class="hero-main">
+      <div class="temp" id="temp">--<sup>°</sup></div>
+      <svg class="hero-icon" id="heroIcon" viewBox="0 0 32 32" aria-hidden="true"></svg>
+    </div>
+    <div class="cond" id="cond">Waiting for weather</div>
+    <div class="feels" id="feels">&nbsp;</div>
+    <div class="stats">
+      <div class="stat"><span>High / Low</span><b id="hilo">--</b></div>
+      <div class="stat"><span>Wind</span><b id="wind">--</b></div>
+      <div class="stat"><span>Humidity</span><b id="hum">--</b></div>
+      <div class="stat"><span>Rain</span><b id="rain">--</b></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Sunrise and sunset">
+    <div class="panel-h"><h2>Sunrise &amp; sunset</h2><small id="today">Today</small></div>
+    <div class="risesets">
+      <div class="rs"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 4v5M9.5 6.5 12 4l2.5 2.5"/></svg>Sunrise</span><b id="rise">--</b></div>
+      <div class="rs"><span>Sunset<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 9V4M9.5 6.5 12 9l2.5-2.5"/></svg></span><b id="set">--</b></div>
+    </div>
+    <div class="daylen"><span>Daylight <strong id="daylen">--</strong></span><span id="daydiff"></span></div>
+    <div class="arc" id="arc" aria-label="Sun height over today"></div>
+    <div class="golden">
+      <div>Morning golden hour<br><b id="gAM">--</b></div>
+      <div>Evening golden hour<br><b id="gPM">--</b></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Where the sun is now">
+    <div class="panel-h"><h2>Where the sun is</h2><small id="posTime">now</small></div>
+    <div class="pos">
+      <div><span>Direction</span><b id="az">--</b></div>
+      <div><span>Height above horizon</span><b id="alt">--</b></div>
+    </div>
+    <div class="dialwrap" id="dialwrap"></div>
+    <div class="facing" id="facing"></div>
+    <div class="dial-actions"><button type="button" class="chip" id="compassBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>
+      <span id="compassLabel">Point with your phone</span></button></div>
+    <p class="dial-note" id="dialNote">The centre is straight overhead and the edge is the horizon. The line shows the sun's path across your sky today.</p>
+  </section>
+
+  <section class="panel" aria-label="Three day outlook">
+    <div class="panel-h"><h2>3-day outlook</h2></div>
+    <div class="days" id="days"><div class="day skeleton"><div class="day-name"><b>--</b></div></div></div>
+  </section>
+
+  <footer>
+    <div id="coords">&nbsp;</div>
+    Weather from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Sun position calculated on your phone.
+  </footer>
+</main>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+const S = {
+  unit: store.get('unit') || (/-(US|LR|MM)$/i.test(navigator.language || '') ? 'F' : 'C'),
+  coords: null, place: null, wx: null, fetchedAt: 0,
+  heading: null, compassOn: false, busy: false
+};
+
+/* ---------- sun math (NOAA / Meeus approximations, accurate to a fraction of a degree) ---------- */
+const PI = Math.PI, rad = PI/180, dayMs = 864e5, J1970 = 2440588, J2000 = 2451545, e = rad*23.4397;
+const toDays = d => d.valueOf()/dayMs - 0.5 + J1970 - J2000;
+function sunPos(date, lat, lon){
+  const d = toDays(date), M = rad*(357.5291 + 0.98560028*d);
+  const C = rad*(1.9148*Math.sin(M) + 0.02*Math.sin(2*M) + 0.0003*Math.sin(3*M));
+  const L = M + C + rad*102.9372 + PI;
+  const dec = Math.asin(Math.sin(e)*Math.sin(L));
+  const ra = Math.atan2(Math.sin(L)*Math.cos(e), Math.cos(L));
+  const phi = rad*lat, H = rad*(280.16 + 360.9856235*d) + rad*lon - ra;
+  const alt = Math.asin(Math.sin(phi)*Math.sin(dec) + Math.cos(phi)*Math.cos(dec)*Math.cos(H));
+  const az = Math.atan2(Math.sin(H), Math.cos(H)*Math.sin(phi) - Math.tan(dec)*Math.cos(phi));
+  // geometric altitude; sunrise/sunset use -0.833° to allow for refraction and the sun's radius
+  return { alt: alt/rad, az: (az/rad + 180 + 360) % 360 };
+}
+function dayInfo(base, lat, lon){
+  const start = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  const end = new Date(base.getFullYear(), base.getMonth(), base.getDate()+1);
+  const mins = Math.round((end - start)/6e4);
+  const alts = [];
+  for (let i=0;i<=mins;i++) alts.push(sunPos(new Date(+start + i*6e4), lat, lon).alt);
+  const cross = h => {
+    const up=[], down=[];
+    for (let i=1;i<alts.length;i++){
+      const a0=alts[i-1], a1=alts[i];
+      if (a0<h && a1>=h) up.push(new Date(+start + (i-1 + (h-a0)/(a1-a0))*6e4));
+      else if (a0>=h && a1<h) down.push(new Date(+start + (i-1 + (a0-h)/(a0-a1))*6e4));
+    }
+    return {up, down};
+  };
+  let maxI = 0; alts.forEach((a,i)=>{ if (a>alts[maxI]) maxI=i; });
+  const rs = cross(-0.833), g6 = cross(6), g4 = cross(-4);
+  const rise = rs.up[0] || null, set = rs.down[rs.down.length-1] || null;
+  let polar = null;
+  if (!rise && !set) polar = alts[maxI] > 0 ? 'day' : 'night';
+  let daylight = 0;
+  alts.forEach(a => { if (a >= -0.833) daylight++; });
+  return {
+    start, end, alts, rise, set, polar,
+    noon: new Date(+start + maxI*6e4), maxAlt: alts[maxI],
+    daylightMin: Math.max(0, daylight-1),
+    goldenAM: (g4.up[0] && g6.up[0]) ? [g4.up[0], g6.up[0]] : null,
+    goldenPM: (g6.down.length && g4.down.length) ? [g6.down[g6.down.length-1], g4.down[g4.down.length-1]] : null
+  };
+}
+const CARD = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const cardinal = deg => CARD[Math.round(((deg%360)+360)%360 / 22.5) % 16];
+const CARD_LONG = {N:'north',NNE:'north-northeast',NE:'northeast',ENE:'east-northeast',E:'east',ESE:'east-southeast',SE:'southeast',SSE:'south-southeast',S:'south',SSW:'south-southwest',SW:'southwest',WSW:'west-southwest',W:'west',WNW:'west-northwest',NW:'northwest',NNW:'north-northwest'};
+
+/* ---------- formatting ---------- */
+const tFmt = new Intl.DateTimeFormat(undefined, {hour:'numeric', minute:'2-digit'});
+function timeParts(d){
+  if (!d) return {main:'--', ap:''};
+  const parts = tFmt.formatToParts(d);
+  const ap = parts.find(p => p.type==='dayPeriod');
+  const main = parts.filter(p => p.type!=='dayPeriod').map(p=>p.value).join('').trim();
+  return {main, ap: ap ? ap.value : ''};
+}
+const tStr = d => d ? tFmt.format(d) : '--';
+const timeHTML = d => { const p = timeParts(d); return esc(p.main) + (p.ap ? '<small>'+esc(p.ap)+'</small>' : ''); };
+const dur = m => `${Math.floor(m/60)}h ${String(Math.round(m%60)).padStart(2,'0')}m`;
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const T = c => c==null ? '--' : Math.round(S.unit==='F' ? c*9/5+32 : c);
+const W = k => k==null ? '--' : (S.unit==='F' ? Math.round(k*0.621371)+' mph' : Math.round(k)+' km/h');
+
+/* ---------- weather codes & icons ---------- */
+const WMO = {
+  0:['Clear','clear'],1:['Mostly clear','partly'],2:['Partly cloudy','partly'],3:['Overcast','cloudy'],
+  45:['Fog','fog'],48:['Freezing fog','fog'],
+  51:['Light drizzle','drizzle'],53:['Drizzle','drizzle'],55:['Heavy drizzle','drizzle'],
+  56:['Freezing drizzle','drizzle'],57:['Freezing drizzle','drizzle'],
+  61:['Light rain','rain'],63:['Rain','rain'],65:['Heavy rain','rain'],66:['Freezing rain','rain'],67:['Freezing rain','rain'],
+  71:['Light snow','snow'],73:['Snow','snow'],75:['Heavy snow','snow'],77:['Snow grains','snow'],
+  80:['Rain showers','rain'],81:['Rain showers','rain'],82:['Heavy showers','rain'],85:['Snow showers','snow'],86:['Heavy snow showers','snow'],
+  95:['Thunderstorms','storm'],96:['Thunderstorms with hail','storm'],99:['Thunderstorms with hail','storm']
+};
+const wmo = c => WMO[c] || ['Unknown','cloudy'];
+const CLOUD = 'M10 25h13.5a5.5 5.5 0 0 0 .6-10.97A7.5 7.5 0 0 0 9.6 16.2 4.5 4.5 0 0 0 10 25z';
+const SUNG = (cx,cy,r,ray) => {
+  let s = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--sun-ico,#f5b041)" stroke="none"/>`;
+  for (let i=0;i<8;i++){ const a=i*PI/4, x1=cx+Math.cos(a)*(r+2.2), y1=cy+Math.sin(a)*(r+2.2), x2=cx+Math.cos(a)*(r+2.2+ray), y2=cy+Math.sin(a)*(r+2.2+ray);
+    s += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--sun-ico,#f5b041)"/>`; }
+  return s;
+};
+const MOON = (cx,cy,r) => `<path d="M${cx+r*0.35} ${cy-r} a${r} ${r} 0 1 0 ${r*0.65} ${r*1.55} a${r*0.8} ${r*0.8} 0 0 1 -${r*0.65} -${r*1.55}z" fill="#dfe6f2" stroke="none"/>`;
+function icon(kind, night){
+  const up = `<g transform="translate(0 -4)"><path d="${CLOUD}" fill="currentColor" fill-opacity=".14"/></g>`;
+  const upc = `<g transform="translate(0 -4)"><path d="${CLOUD}"/></g>`;
+  let b = '';
+  switch(kind){
+    case 'clear': b = night ? MOON(16,16,8) : SUNG(16,16,6,3.2); break;
+    case 'partly': b = (night ? MOON(12,11,6) : SUNG(12,11,4.5,2.4)) + `<path d="${CLOUD}" fill="var(--cloud-fill,#fff)" fill-opacity=".92" transform="translate(3 2) scale(.85)"/><path d="${CLOUD}" transform="translate(3 2) scale(.85)"/>`; break;
+    case 'cloudy': b = `<path d="${CLOUD}" fill="currentColor" fill-opacity=".14"/><path d="${CLOUD}"/>`; break;
+    case 'fog': b = `<path d="M6 12h20M4 17h24M7 22h18M10 27h12"/>`; break;
+    case 'drizzle': b = up + upc + `<path d="M11 25v1.5M16 26v1.5M21 25v1.5M13.5 29v.5M18.5 29v.5"/>`; break;
+    case 'rain': b = up + upc + `<path d="M11 24l-1.5 4M16 24l-1.5 5M21 24l-1.5 4"/>`; break;
+    case 'snow': b = up + upc + `<g fill="currentColor" stroke="none"><circle cx="11" cy="26" r="1.3"/><circle cx="16" cy="28" r="1.3"/><circle cx="21" cy="26" r="1.3"/><circle cx="13.5" cy="30.5" r="1.1"/><circle cx="18.5" cy="30.5" r="1.1"/></g>`; break;
+    case 'storm': b = up + upc + `<path d="M17 22l-4 5h4l-2 4" stroke="var(--sun-ico,#f5b041)"/>`; break;
+  }
+  return `<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${b}</g>`;
+}
+
+/* ---------- sky colour from sun height + cloud ---------- */
+function setSky(alt, code){
+  let c;
+  if (alt < -12) c = ['#0c1830','#1d2d52'];
+  else if (alt < -4) c = ['#1c2c58','#5b4b80'];
+  else if (alt < 6) c = ['#36467a','#d3804c'];
+  else if (alt < 20) c = ['#2c67ad','#d99a62'];
+  else c = ['#245fa6','#5b9edc'];
+  const k = wmo(code)[1];
+  if (alt >= -4 && (k==='cloudy' || k==='fog')) c = ['#4e5d72','#8593a6'];
+  if (alt >= -4 && (k==='rain' || k==='drizzle' || k==='storm' || k==='snow')) c = ['#36445a','#62738a'];
+  const h = $('hero'); h.style.setProperty('--sky1', c[0]); h.style.setProperty('--sky2', c[1]);
+}
+
+/* ---------- rendering ---------- */
+function renderWeather(){
+  const wx = S.wx; if (!wx) return;
+  const cur = wx.current, d = wx.daily;
+  const [label, kind] = wmo(cur.weather_code);
+  $('temp').innerHTML = esc(T(cur.temperature_2m)) + '<sup>°' + S.unit + '</sup>';
+  $('heroIcon').innerHTML = icon(kind, !cur.is_day);
+  $('cond').textContent = label;
+  $('feels').textContent = 'Feels like ' + T(cur.apparent_temperature) + '°';
+  $('hilo').textContent = T(d.temperature_2m_max[0]) + '° / ' + T(d.temperature_2m_min[0]) + '°';
+  $('wind').textContent = W(cur.wind_speed_10m) + (cur.wind_speed_10m >= 2 ? ' ' + cardinal(cur.wind_direction_10m) : '');
+  $('hum').textContent = Math.round(cur.relative_humidity_2m) + '%';
+  $('rain').textContent = (d.precipitation_probability_max[0] ?? 0) + '%';
+
+  const hi = d.temperature_2m_max.slice(0,4), lo = d.temperature_2m_min.slice(0,4);
+  const gMin = Math.min(...lo), gMax = Math.max(...hi), span = Math.max(1, gMax - gMin);
+  let html = '';
+  for (let i=1;i<=3 && i<d.time.length;i++){
+    const date = new Date(d.time[i] + 'T12:00:00');
+    const name = i===1 ? 'Tomorrow' : date.toLocaleDateString(undefined, {weekday:'long'});
+    const sub = date.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+    const [lab, k] = wmo(d.weather_code[i]);
+    const left = (lo[i]-gMin)/span*100, width = Math.max(4,(hi[i]-lo[i])/span*100);
+    const p = d.precipitation_probability_max[i];
+    const di = S.coords ? dayInfo(date, S.coords.lat, S.coords.lon) : null;
+    const sunLine = !di ? '' : di.polar==='day' ? 'Sun up all day' : di.polar==='night' ? 'Sun stays down' :
+      `Sun ${tStr(di.rise)} – ${tStr(di.set)} · ${dur(di.daylightMin)}`;
+    html += `<div class="day">
+      <div class="day-name"><b>${esc(name)}</b><span>${esc(sub)}</span></div>
+      <svg class="wx" viewBox="0 0 32 32" aria-hidden="true">${icon(k,false)}</svg>
+      <div class="day-body">
+        <div class="day-cond"><span>${esc(lab)}</span>${p!=null && p>=10 ? `<em>${p}% chance</em>` : ''}</div>
+        <div class="range"><span class="lo">${T(lo[i])}°</span><span class="bar"><i style="left:${left.toFixed(1)}%;width:${width.toFixed(1)}%"></i></span><span>${T(hi[i])}°</span></div>
+        <div class="day-sun">${esc(sunLine)}</div>
+      </div></div>`;
+  }
+  $('days').innerHTML = html;
+}
+
+function renderSun(){
+  if (!S.coords) return;
+  const {lat, lon} = S.coords, now = new Date();
+  const di = dayInfo(now, lat, lon);
+  const y = new Date(now); y.setDate(y.getDate()-1);
+  const dy = dayInfo(y, lat, lon);
+  const pos = sunPos(now, lat, lon);
+
+  $('today').textContent = now.toLocaleDateString(undefined, {weekday:'long', month:'short', day:'numeric'});
+  if (di.polar){
+    $('rise').textContent = di.polar==='day' ? 'Up all day' : 'Down all day';
+    $('set').textContent = '--';
+  } else {
+    $('rise').innerHTML = timeHTML(di.rise);
+    $('set').innerHTML = timeHTML(di.set);
+  }
+  $('daylen').textContent = dur(di.daylightMin);
+  const diffSec = Math.round((di.daylightMin - dy.daylightMin) * 60);
+  // daylight minutes are whole minutes; refine using exact rise/set when available
+  let exact = null;
+  if (di.rise && di.set && dy.rise && dy.set) exact = Math.round(((di.set-di.rise) - (dy.set-dy.rise))/1000);
+  const ds = exact ?? diffSec;
+  const sign = ds > 0 ? '+' : ds < 0 ? '−' : '±';
+  const a = Math.abs(ds);
+  $('daydiff').textContent = `${sign}${Math.floor(a/60)}m ${String(a%60).padStart(2,'0')}s vs yesterday`;
+  $('gAM').textContent = di.goldenAM ? `${tStr(di.goldenAM[0])} – ${tStr(di.goldenAM[1])}` : '--';
+  $('gPM').textContent = di.goldenPM ? `${tStr(di.goldenPM[0])} – ${tStr(di.goldenPM[1])}` : '--';
+
+  drawArc(di, now, pos);
+  $('az').innerHTML = esc(Math.round(pos.az)) + '°<small>' + cardinal(pos.az) + '</small>';
+  $('alt').innerHTML = esc((pos.alt >= 0 ? '' : '−') + Math.abs(pos.alt).toFixed(1)) + '°<small>' + (pos.alt >= -0.833 ? 'up' : 'set') + '</small>';
+  $('posTime').textContent = 'as of ' + tStr(now);
+  drawDial(di, pos, now);
+  setSky(pos.alt, S.wx ? S.wx.current.weather_code : 0);
+  updateFacing(pos);
+}
+
+function drawArc(di, now, pos){
+  const W_ = 340, H_ = 150, padL = 8, padR = 8, top = 22, bot = 22;
+  const yMax = Math.max(20, Math.ceil((di.maxAlt + 8)/10)*10);
+  const yMin = -Math.max(18, Math.min(yMax*0.55, 40));
+  const total = di.alts.length - 1;
+  const X = m => padL + (m/total)*(W_-padL-padR);
+  const Y = a => top + (yMax - a)/(yMax - yMin)*(H_-top-bot);
+  let path = '';
+  for (let i=0;i<=total;i+=8) path += (i? 'L':'M') + X(i).toFixed(1) + ' ' + Y(di.alts[i]).toFixed(1);
+  path += 'L' + X(total).toFixed(1) + ' ' + Y(di.alts[total]).toFixed(1);
+  const hz = Y(0);
+  const nowM = (now - di.start)/6e4;
+  const cx = X(nowM), cy = Y(pos.alt);
+  const ticks = [6,12,18].map(h => {
+    const m = h*60; if (m>total) return '';
+    const lbl = tFmt.format(new Date(+di.start + m*6e4)).replace(':00','');
+    return `<line x1="${X(m)}" x2="${X(m)}" y1="${top-4}" y2="${H_-bot+4}" stroke="var(--line)" stroke-dasharray="2 3"/>
+      <text x="${X(m)}" y="${H_-6}" text-anchor="middle" font-size="10" fill="var(--muted)">${esc(lbl)}</text>`;
+  }).join('');
+  const noonLbl = di.maxAlt > 0 ? `<text x="${X((di.noon-di.start)/6e4)}" y="${Y(di.maxAlt)-7}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink)">${Math.round(di.maxAlt)}° at ${esc(tStr(di.noon))}</text>` : '';
+  $('arc').innerHTML = `<svg viewBox="0 0 ${W_} ${H_}" role="img" aria-label="Sun height through the day">
+    <defs>
+      <clipPath id="above"><rect x="0" y="0" width="${W_}" height="${hz}"/></clipPath>
+      <clipPath id="below"><rect x="0" y="${hz}" width="${W_}" height="${H_-hz}"/></clipPath>
+      <linearGradient id="dayfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sun)" stop-opacity=".35"/><stop offset="1" stop-color="var(--sun)" stop-opacity=".04"/></linearGradient>
+    </defs>
+    ${ticks}
+    <path d="${path}L${X(total)} ${hz}L${X(0)} ${hz}Z" fill="url(#dayfill)" clip-path="url(#above)"/>
+    <path d="${path}" fill="none" stroke="var(--sun)" stroke-width="2.2" clip-path="url(#above)"/>
+    <path d="${path}" fill="none" stroke="var(--path)" stroke-width="1.6" stroke-dasharray="3 3" clip-path="url(#below)"/>
+    <line x1="0" x2="${W_}" y1="${hz}" y2="${hz}" stroke="var(--muted)" stroke-width="1"/>
+    <text x="${W_-4}" y="${hz-4}" text-anchor="end" font-size="9.5" fill="var(--muted)" letter-spacing=".06em">HORIZON</text>
+    ${noonLbl}
+    <circle cx="${cx}" cy="${cy}" r="9" fill="var(--sun)" fill-opacity=".22"/>
+    <circle cx="${cx}" cy="${cy}" r="5.5" fill="${pos.alt >= -0.833 ? 'var(--sun)' : 'var(--surface)'}" stroke="var(--sun)" stroke-width="2"/>
+  </svg>`;
+}
+
+function drawDial(di, pos, now){
+  const R = 120, C = 150, inner = R - 8;
+  const P = (az, alt) => { const r = inner * (90 - Math.max(alt,0))/90; return [C + r*Math.sin(az*rad), C - r*Math.cos(az*rad)]; };
+  let ticks = '';
+  for (let d=0; d<360; d+=10){
+    const big = d%90===0, mid = d%30===0;
+    const r1 = R, r2 = R - (big ? 12 : mid ? 8 : 4);
+    ticks += `<line x1="${C+r1*Math.sin(d*rad)}" y1="${C-r1*Math.cos(d*rad)}" x2="${C+r2*Math.sin(d*rad)}" y2="${C-r2*Math.cos(d*rad)}" stroke="${big?'var(--ink)':'var(--muted)'}" stroke-width="${big?2:1}"/>`;
+  }
+  const labels = [['N',0],['E',90],['S',180],['W',270]].map(([t,d]) => {
+    const r = R + 15, x = C + r*Math.sin(d*rad), y = C - r*Math.cos(d*rad) + 5;
+    return `<text x="${x}" y="${y}" text-anchor="middle" font-size="15" font-weight="700" fill="${t==='N'?'var(--warm)':'var(--ink)'}" font-family="var(--f-display)" transform="rotate(${S.compassOn && S.heading!=null ? S.heading : 0} ${x} ${y-5})">${t}</text>`;
+  }).join('');
+  const rings = [30,60].map(a => `<circle cx="${C}" cy="${C}" r="${inner*(90-a)/90}" fill="none" stroke="var(--line)" stroke-dasharray="2 4"/>`).join('');
+  // today's path above horizon
+  let path = '', started = false;
+  for (let i=0;i<di.alts.length;i+=5){
+    const t = new Date(+di.start + i*6e4), p = sunPos(t, S.coords.lat, S.coords.lon);
+    if (p.alt >= -0.5){ const [x,y] = P(p.az, p.alt); path += (started ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); started = true; }
+    else started = false;
+  }
+  let marks = '';
+  if (di.rise){ const p = sunPos(di.rise, S.coords.lat, S.coords.lon), [x,y] = P(p.az,0);
+    marks += `<circle cx="${x}" cy="${y}" r="4" fill="var(--surface)" stroke="var(--sun)" stroke-width="2"/>`; }
+  if (di.set){ const p = sunPos(di.set, S.coords.lat, S.coords.lon), [x,y] = P(p.az,0);
+    marks += `<circle cx="${x}" cy="${y}" r="4" fill="var(--sun)" stroke="var(--sun)" stroke-width="2"/>`; }
+  const up = pos.alt >= -0.833;
+  const [sx, sy] = up ? P(pos.az, pos.alt) : [C + (R+0)*Math.sin(pos.az*rad), C - (R+0)*Math.cos(pos.az*rad)];
+  const sun = `<line x1="${C}" y1="${C}" x2="${sx}" y2="${sy}" stroke="var(--sun)" stroke-width="1.4" stroke-dasharray="${up?'0':'3 3'}" opacity=".7"/>
+    <circle cx="${sx}" cy="${sy}" r="15" fill="var(--sun)" fill-opacity="${up ? .22 : .1}"/>
+    <circle cx="${sx}" cy="${sy}" r="9" fill="${up ? 'var(--sun)' : 'var(--surface)'}" stroke="var(--sun)" stroke-width="2.5"/>`;
+  const rot = S.compassOn && S.heading!=null ? -S.heading : 0;
+  const facing = S.compassOn && S.heading!=null
+    ? `<path d="M${C} 6 l7 12 h-14z" fill="var(--ink)"/>` : '';
+  $('dialwrap').innerHTML = `<svg viewBox="0 0 300 300" role="img" aria-label="Sky chart showing the sun's direction and height">
+    ${facing}
+    <g id="dial" style="transform:rotate(${rot}deg); transform-origin:150px 150px">
+      <circle cx="${C}" cy="${C}" r="${R}" fill="var(--bg)" stroke="var(--line)"/>
+      ${rings}${ticks}${labels}
+      <circle cx="${C}" cy="${C}" r="2.5" fill="var(--muted)"/>
+      <path d="${path}" fill="none" stroke="var(--sun)" stroke-width="2" stroke-opacity=".55" stroke-linecap="round"/>
+      ${marks}${sun}
+    </g>
+  </svg>`;
+  S.lastDial = {di, pos};
+}
+
+function updateFacing(pos){
+  const el = $('facing');
+  if (!pos) return;
+  const up = pos.alt >= -0.833;
+  if (S.compassOn && S.heading != null){
+    const diff = ((pos.az - S.heading + 540) % 360) - 180;
+    const a = Math.abs(Math.round(diff));
+    let txt;
+    if (a <= 8) txt = up ? 'The sun is straight ahead' : 'The sun is straight ahead, below the horizon';
+    else if (a >= 172) txt = 'The sun is behind you';
+    else txt = `Turn ${a}° to your ${diff > 0 ? 'right' : 'left'} to face the sun`;
+    el.textContent = txt + ' · you face ' + cardinal(S.heading);
+  } else {
+    el.textContent = up
+      ? `The sun is in the ${CARD_LONG[cardinal(pos.az)]}, ${Math.round(pos.alt)}° up`
+      : `The sun is below the horizon, in the ${CARD_LONG[cardinal(pos.az)]}`;
+  }
+}
+
+/* ---------- compass ---------- */
+let rafPending = false, smooth = null;
+function onOrient(ev){
+  let h = null;
+  if (typeof ev.webkitCompassHeading === 'number' && !isNaN(ev.webkitCompassHeading)) h = ev.webkitCompassHeading;
+  else if (ev.absolute && ev.alpha != null) h = (360 - ev.alpha) % 360;
+  if (h == null) return;
+  if (smooth == null) smooth = h;
+  else { let d = ((h - smooth + 540) % 360) - 180; smooth = (smooth + d*0.25 + 360) % 360; }
+  S.heading = smooth;
+  if (!rafPending){ rafPending = true; requestAnimationFrame(() => {
+    rafPending = false;
+    if (S.coords){ const pos = sunPos(new Date(), S.coords.lat, S.coords.lon); drawDial(S.lastDial ? S.lastDial.di : dayInfo(new Date(), S.coords.lat, S.coords.lon), pos); updateFacing(pos); }
+  }); }
+}
+async function toggleCompass(){
+  if (S.compassOn){
+    window.removeEventListener('deviceorientation', onOrient, true);
+    window.removeEventListener('deviceorientationabsolute', onOrient, true);
+    S.compassOn = false; S.heading = null; smooth = null;
+    $('compassLabel').textContent = 'Point with your phone';
+    $('dialNote').textContent = 'The centre is straight overhead and the edge is the horizon. The line shows the sun’s path across your sky today.';
+    renderSun(); return;
+  }
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      const r = await DeviceOrientationEvent.requestPermission();
+      if (r !== 'granted'){ $('dialNote').textContent = 'Motion access was declined. To allow it, close and reopen the app, then tap the button again.'; return; }
+    }
+  } catch(err){ $('dialNote').textContent = 'The compass needs the app opened over https. It is not available here.'; return; }
+  if (typeof DeviceOrientationEvent === 'undefined'){ $('dialNote').textContent = 'This device has no compass.'; return; }
+  S.compassOn = true;
+  window.addEventListener('deviceorientation', onOrient, true);
+  window.addEventListener('deviceorientationabsolute', onOrient, true);
+  $('compassLabel').textContent = 'Stop compass';
+  $('dialNote').textContent = 'Hold your phone flat. The triangle at the top is the way you are facing.';
+  setTimeout(() => { if (S.compassOn && S.heading == null) $('dialNote').textContent = 'No compass reading yet. Hold the phone flat and move it in a figure eight.'; }, 3000);
+}
+
+/* ---------- data ---------- */
+function locate(){
+  return new Promise((res, rej) => {
+    if (!('geolocation' in navigator)) return rej({code: 0});
+    navigator.geolocation.getCurrentPosition(
+      p => res({lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy}),
+      rej, {enableHighAccuracy: false, timeout: 20000, maximumAge: 120000});
+  });
+}
+async function getWeather(lat, lon){
+  const q = new URLSearchParams({
+    latitude: lat.toFixed(4), longitude: lon.toFixed(4), timezone: 'auto', forecast_days: '4',
+    current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+  });
+  const r = await fetch('https://api.open-meteo.com/v1/forecast?' + q);
+  if (!r.ok) throw new Error('weather ' + r.status);
+  return r.json();
+}
+async function getPlace(lat, lon){
+  try {
+    const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&localityLanguage=en`);
+    if (!r.ok) return null;
+    const j = await r.json();
+    const town = j.city || j.locality || '';
+    const region = (j.principalSubdivisionCode || '').split('-').pop() || j.countryCode || '';
+    return town ? (region && region !== town ? `${town}, ${region}` : town) : null;
+  } catch(e){ return null; }
+}
+function notice(title, body, retry){
+  const n = $('notice');
+  if (!title){ n.hidden = true; n.innerHTML = ''; return; }
+  n.innerHTML = `<b>${esc(title)}</b>${esc(body)}` + (retry ? '<br><button type="button" id="retry">Try again</button>' : '');
+  n.hidden = false;
+  if (retry) $('retry').onclick = () => refresh();
+}
+function renderHeader(){
+  $('place').textContent = S.place || (S.coords ? `${S.coords.lat.toFixed(3)}°, ${S.coords.lon.toFixed(3)}°` : 'Locating…');
+  $('updated').textContent = S.fetchedAt ? 'Updated ' + tStr(new Date(S.fetchedAt)) : 'Finding your position';
+  if (S.coords) $('coords').textContent = `${Math.abs(S.coords.lat).toFixed(3)}° ${S.coords.lat>=0?'N':'S'}, ${Math.abs(S.coords.lon).toFixed(3)}° ${S.coords.lon>=0?'E':'W'}`;
+}
+function renderAll(){ renderHeader(); renderSun(); renderWeather(); }
+
+async function refresh(){
+  if (S.busy) return;
+  S.busy = true; $('refresh').classList.add('spin');
+  try {
+    const c = await locate();
+    const moved = !S.coords || Math.hypot(c.lat - S.coords.lat, c.lon - S.coords.lon) > 0.01;
+    S.coords = c;
+    if (moved) S.place = null;
+    renderHeader(); renderSun();
+    const [wx, place] = await Promise.all([getWeather(c.lat, c.lon), moved || !S.place ? getPlace(c.lat, c.lon) : Promise.resolve(S.place)]);
+    S.wx = wx; S.place = place || S.place; S.fetchedAt = Date.now();
+    store.set('last', {coords: S.coords, place: S.place, wx: S.wx, fetchedAt: S.fetchedAt});
+    notice(null);
+    renderAll();
+  } catch(err){
+    if (err && err.code === 1){
+      notice('Location is turned off for Sunward',
+        ' On iPhone open Settings › Privacy & Security › Location Services › Safari Websites and choose "While Using the App". Then tap Try again.', true);
+    } else if (err && (err.code === 2 || err.code === 3)){
+      notice('Could not find your position', ' Check that Location Services is on, then try again.', true);
+    } else if (err && err.code === 0){
+      notice('Location is not available', ' This browser cannot share your position.', false);
+    } else {
+      notice('Could not load the weather', ' Check your connection and try again.' + (S.wx ? ' Showing the last forecast.' : ''), true);
+    }
+    renderAll();
+  } finally {
+    S.busy = false; $('refresh').classList.remove('spin');
+  }
+}
+
+function setUnit(u){
+  S.unit = u; store.set('unit', u);
+  $('uF').setAttribute('aria-pressed', u==='F'); $('uC').setAttribute('aria-pressed', u==='C');
+  renderWeather();
+}
+
+/* ---------- boot ---------- */
+$('uF').onclick = () => setUnit('F');
+$('uC').onclick = () => setUnit('C');
+$('refresh').onclick = () => refresh();
+$('compassBtn').onclick = () => toggleCompass();
+setUnit(S.unit);
+
+const last = store.get('last');
+if (last && last.coords && last.wx){
+  Object.assign(S, {coords: last.coords, place: last.place, wx: last.wx, fetchedAt: last.fetchedAt});
+  renderAll();
+}
+refresh();
+setInterval(() => { if (!document.hidden && S.coords){ renderSun(); renderHeader(); } }, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden){ renderSun(); if (Date.now() - S.fetchedAt > 10*60*1000) refresh(); }
+});
+window.Sunward = { sunPos, dayInfo };
+})();
+</script>
+</body>
+</html>
