@@ -20,7 +20,7 @@
 /* Layout: one phone-width column. A sky band whose colour follows the real sun, then sun, sky-chart and outlook panels. */
 :root{
   --bg:#edf1f5; --surface:#ffffff; --ink:#132235; --muted:#5a6a7e; --line:#d8e0e9;
-  --sun:#e8892b; --sun-soft:#f6c27a; --path:#b9c6d4; --cool:#3f7fc4; --warm:#e0703a;
+  --sun:#e8892b; --sun-soft:#f6c27a; --path:#b9c6d4; --moon-lit:#efe2b8; --moon-dark:#c3cdd9; --cool:#3f7fc4; --warm:#e0703a;
   --sky1:#2a6ab3; --sky2:#5fa3e0;
   --f-display:"Familjen Grotesk","Avenir Next","Helvetica Neue",Arial,sans-serif;
   --f-body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -29,7 +29,7 @@
 }
 @media (prefers-color-scheme: dark){
   :root{ --bg:#0b121c; --surface:#131d2a; --ink:#e6ecf3; --muted:#8c9cb1; --line:#223245;
-    --sun:#f3a443; --sun-soft:#8a5a22; --path:#33465d; --cool:#6ea6e6; --warm:#f08a55; color-scheme:dark; }
+    --sun:#f3a443; --sun-soft:#8a5a22; --path:#33465d; --moon-lit:#efe6c8; --moon-dark:#2a3a4f; --cool:#6ea6e6; --warm:#f08a55; color-scheme:dark; }
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -52,9 +52,6 @@ button:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
 .chip svg{width:16px; height:16px}
 .chip.spin svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.units{display:inline-flex; border:1px solid var(--line); border-radius:999px; background:var(--surface); padding:3px}
-.units button{border:0; background:transparent; height:28px; min-width:34px; border-radius:999px; font-weight:600; font-size:13px; color:var(--muted)}
-.units button[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
 
 .notice{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--warm); border-radius:12px; padding:12px 14px; font-size:13.5px}
 .notice b{display:block; margin-bottom:2px}
@@ -71,7 +68,7 @@ button:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
 .hero-icon{width:76px; height:76px; flex:none; color:#fff}
 .cond{font:600 19px/1.25 var(--f-display); margin:12px 0 2px}
 .feels{font-size:14px; opacity:.88}
-.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.25)}
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:12px 8px; margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.25)}
 .stat span{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; opacity:.78}
 .stat{min-width:0}
 .stat b{font:600 14.5px/1.3 var(--f-display); font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -96,6 +93,14 @@ button:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
 .golden{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; font-size:12.5px; color:var(--muted)}
 .golden div:last-child{text-align:right}
 .golden b{color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums}
+.moon{margin-top:14px; padding-top:14px; border-top:1px solid var(--line)}
+.moon-head{display:flex; align-items:center; gap:12px}
+.moon-head svg{width:48px; height:48px; flex:none}
+.moon-head b{display:block; font:600 17px/1.25 var(--f-display)}
+.moon-head span{font-size:12.5px; color:var(--muted)}
+.moon .risesets{margin-top:12px}
+.moon .rs b{font-size:24px}
+.moon .rs span svg{color:var(--muted)}
 
 /* sun position */
 .pos{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:6px}
@@ -126,6 +131,23 @@ button:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
 .bar i{position:absolute; top:0; bottom:0; border-radius:3px; background:linear-gradient(90deg,var(--cool),var(--warm))}
 .day-sun{font-size:12px; color:var(--muted); margin-top:5px; font-variant-numeric:tabular-nums}
 
+/* hourly */
+.hours{display:flex; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; margin:0 -16px; padding:0 16px 4px; scrollbar-width:none}
+.hours::-webkit-scrollbar{display:none}
+.hr{flex:none; width:54px; display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 0; border-radius:12px; scroll-snap-align:start; font-variant-numeric:tabular-nums}
+.hr.past{opacity:.42}
+.hr.now{background:var(--bg); outline:1.5px solid var(--sun)}
+.hr-t{font-size:12px; color:var(--muted); font-weight:600}
+.hr.now .hr-t{color:var(--ink)}
+.hr svg.wx{width:28px; height:28px; color:var(--ink)}
+.hr-temp{font:600 16px/1.2 var(--f-display)}
+.hr-pop{font-size:11px; color:var(--cool); font-weight:600; min-height:15px}
+.hr-bar{width:20px; height:44px; display:flex; align-items:flex-end; border-radius:4px; background:var(--line); overflow:hidden; margin-top:2px}
+.hr-bar i{display:block; width:100%; background:var(--cool); border-radius:4px 4px 0 0}
+.hr-mm{font:500 11.5px/1.2 var(--f-data); color:var(--ink)}
+.hr-mm.dry{color:var(--muted)}
+.hours-key{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted); margin-top:8px}
+
 footer{font-size:11.5px; color:var(--muted); text-align:center; line-height:1.6}
 footer a{color:inherit}
 .skeleton{opacity:.45}
@@ -138,10 +160,6 @@ footer a{color:inherit}
     <div class="place">
       <h1 id="place">Locating…</h1>
       <p id="updated">Finding your position</p>
-    </div>
-    <div class="units" role="group" aria-label="Temperature units">
-      <button type="button" id="uF" aria-pressed="true">°F</button>
-      <button type="button" id="uC" aria-pressed="false">°C</button>
     </div>
     <button type="button" class="chip" id="refresh" aria-label="Refresh">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
@@ -161,8 +179,16 @@ footer a{color:inherit}
       <div class="stat"><span>High / Low</span><b id="hilo">--</b></div>
       <div class="stat"><span>Wind</span><b id="wind">--</b></div>
       <div class="stat"><span>Humidity</span><b id="hum">--</b></div>
-      <div class="stat"><span>Rain</span><b id="rain">--</b></div>
+      <div class="stat"><span>Rain chance</span><b id="rain">--</b></div>
+      <div class="stat"><span id="altLabel">Altitude</span><b id="elev">--</b></div>
+      <div class="stat"><span>Pressure</span><b id="pres">--</b></div>
     </div>
+  </section>
+
+  <section class="panel" aria-label="Today hour by hour">
+    <div class="panel-h"><h2>Today, hour by hour</h2><small id="mmTotal"></small></div>
+    <div class="hours" id="hours"><div class="hr skeleton"><span class="hr-t">--</span></div></div>
+    <div class="hours-key"><span>Bars show precipitation in mm per hour</span><span>Swipe for more</span></div>
   </section>
 
   <section class="panel" aria-label="Sunrise and sunset">
@@ -176,6 +202,16 @@ footer a{color:inherit}
     <div class="golden">
       <div>Morning golden hour<br><b id="gAM">--</b></div>
       <div>Evening golden hour<br><b id="gPM">--</b></div>
+    </div>
+    <div class="moon">
+      <div class="moon-head">
+        <svg id="moonIcon" viewBox="0 0 48 48" aria-hidden="true"></svg>
+        <div><b id="moonPhase">--</b><span id="moonSub">&nbsp;</span></div>
+      </div>
+      <div class="risesets">
+        <div class="rs"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 18h18M12 4v8M9.5 6.5 12 4l2.5 2.5"/></svg>Moonrise</span><b id="mrise">--</b></div>
+        <div class="rs"><span>Moonset<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 18h18M12 12V4M9.5 9.5 12 12l2.5-2.5"/></svg></span><b id="mset">--</b></div>
+      </div>
     </div>
   </section>
 
@@ -199,7 +235,7 @@ footer a{color:inherit}
   </section>
 
   <footer>
-    <div id="coords">&nbsp;</div>
+    <div><span id="coords"></span><span id="altSrc"></span></div>
     Weather from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Sun position calculated on your phone.
   </footer>
 </main>
@@ -213,7 +249,6 @@ const store = {
   set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 };
 const S = {
-  unit: store.get('unit') || (/-(US|LR|MM)$/i.test(navigator.language || '') ? 'F' : 'C'),
   coords: null, place: null, wx: null, fetchedAt: 0,
   heading: null, compassOn: false, busy: false
 };
@@ -263,6 +298,76 @@ function dayInfo(base, lat, lon){
     goldenPM: (g6.down.length && g4.down.length) ? [g6.down[g6.down.length-1], g4.down[g4.down.length-1]] : null
   };
 }
+/* ---------- moon (Meeus low-precision, as used by SunCalc) ---------- */
+function sunRaDec(d){
+  const M = rad*(357.5291 + 0.98560028*d);
+  const L = M + rad*(1.9148*Math.sin(M) + 0.02*Math.sin(2*M) + 0.0003*Math.sin(3*M)) + rad*102.9372 + PI;
+  return { dec: Math.asin(Math.sin(e)*Math.sin(L)), ra: Math.atan2(Math.sin(L)*Math.cos(e), Math.cos(L)) };
+}
+function moonRaDec(d){
+  const L = rad*(218.316 + 13.176396*d), M = rad*(134.963 + 13.064993*d), F = rad*(93.272 + 13.229350*d);
+  const l = L + rad*6.289*Math.sin(M), b = rad*5.128*Math.sin(F), dist = 385001 - 20905*Math.cos(M);
+  return { ra: Math.atan2(Math.sin(l)*Math.cos(e) - Math.tan(b)*Math.sin(e), Math.cos(l)),
+           dec: Math.asin(Math.sin(b)*Math.cos(e) + Math.cos(b)*Math.sin(e)*Math.sin(l)), dist };
+}
+function moonAlt(date, lat, lon){
+  const d = toDays(date), c = moonRaDec(d), phi = rad*lat;
+  const H = rad*(280.16 + 360.9856235*d) + rad*lon - c.ra;
+  let h = Math.asin(Math.sin(phi)*Math.sin(c.dec) + Math.cos(phi)*Math.cos(c.dec)*Math.cos(H));
+  if (h >= 0) h += 0.0002967 / Math.tan(h + 0.00312536/(h + 0.08901179)); // refraction
+  return h/rad;
+}
+function moonIllum(date){
+  const d = toDays(date), s = sunRaDec(d), m = moonRaDec(d), sd = 149598000;
+  const phi = Math.acos(Math.sin(s.dec)*Math.sin(m.dec) + Math.cos(s.dec)*Math.cos(m.dec)*Math.cos(s.ra - m.ra));
+  const inc = Math.atan2(sd*Math.sin(phi), m.dist - sd*Math.cos(phi));
+  const ang = Math.atan2(Math.cos(s.dec)*Math.sin(s.ra - m.ra), Math.sin(s.dec)*Math.cos(m.dec) - Math.cos(s.dec)*Math.sin(m.dec)*Math.cos(s.ra - m.ra));
+  return { fraction: (1 + Math.cos(inc))/2, phase: 0.5 + 0.5*inc*(ang < 0 ? -1 : 1)/PI };
+}
+function moonTimes(base, lat, lon){
+  const start = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  const end = new Date(base.getFullYear(), base.getMonth(), base.getDate()+1);
+  const step = 2*6e4, h0 = 0.133;
+  let rise = null, set = null, prev = moonAlt(start, lat, lon), t0 = +start;
+  for (let t = +start + step; t <= +end; t += step){
+    const a = moonAlt(new Date(t), lat, lon);
+    if (prev < h0 && a >= h0 && !rise) rise = new Date(t0 + (h0-prev)/(a-prev)*step);
+    if (prev >= h0 && a < h0 && !set) set = new Date(t0 + (prev-h0)/(prev-a)*step);
+    prev = a; t0 = t;
+  }
+  return { rise, set, up: prev >= h0 };
+}
+function phaseName(p){
+  if (p < 0.034 || p > 0.966) return 'New moon';
+  if (p < 0.216) return 'Waxing crescent';
+  if (p < 0.284) return 'First quarter';
+  if (p < 0.466) return 'Waxing gibbous';
+  if (p < 0.534) return 'Full moon';
+  if (p < 0.716) return 'Waning gibbous';
+  if (p < 0.784) return 'Last quarter';
+  return 'Waning crescent';
+}
+function nextPhases(now){
+  let prev = moonIllum(now).phase, full = null, nw = null;
+  for (let i = 1; i <= 24*31 && !(full && nw); i++){
+    const t = new Date(+now + i*36e5), p = moonIllum(t).phase;
+    if (!full && prev < 0.5 && p >= 0.5) full = t;
+    if (!nw && prev > 0.9 && p < 0.1) nw = t;
+    prev = p;
+  }
+  return { full, nw };
+}
+function moonSVG(phase, fraction, south){
+  const c = 24, r = 20, rx = (r*Math.abs(1 - 2*fraction)).toFixed(2);
+  const waxing = phase < 0.5, crescent = fraction < 0.5;
+  let d;
+  if (waxing) d = `M${c} ${c-r}A${r} ${r} 0 0 1 ${c} ${c+r}A${rx} ${r} 0 0 ${crescent ? 0 : 1} ${c} ${c-r}Z`;
+  else d = `M${c} ${c-r}A${r} ${r} 0 0 0 ${c} ${c+r}A${rx} ${r} 0 0 ${crescent ? 1 : 0} ${c} ${c-r}Z`;
+  return `<circle cx="${c}" cy="${c}" r="${r}" fill="var(--moon-dark)"/>
+    <path d="${d}" fill="var(--moon-lit)"${south ? ` transform="matrix(-1 0 0 1 ${2*c} 0)"` : ''}/>
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="var(--muted)" stroke-opacity=".35"/>`;
+}
+
 const CARD = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const cardinal = deg => CARD[Math.round(((deg%360)+360)%360 / 22.5) % 16];
 const CARD_LONG = {N:'north',NNE:'north-northeast',NE:'northeast',ENE:'east-northeast',E:'east',ESE:'east-southeast',SE:'southeast',SSE:'south-southeast',S:'south',SSW:'south-southwest',SW:'southwest',WSW:'west-southwest',W:'west',WNW:'west-northwest',NW:'northwest',NNW:'north-northwest'};
@@ -280,8 +385,9 @@ const tStr = d => d ? tFmt.format(d) : '--';
 const timeHTML = d => { const p = timeParts(d); return esc(p.main) + (p.ap ? '<small>'+esc(p.ap)+'</small>' : ''); };
 const dur = m => `${Math.floor(m/60)}h ${String(Math.round(m%60)).padStart(2,'0')}m`;
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-const T = c => c==null ? '--' : Math.round(S.unit==='F' ? c*9/5+32 : c);
-const W = k => k==null ? '--' : (S.unit==='F' ? Math.round(k*0.621371)+' mph' : Math.round(k)+' km/h');
+const T = c => c==null ? '--' : Math.round(c);
+const W = k => k==null ? '--' : Math.round(k)+' km/h';
+const nf = new Intl.NumberFormat(undefined, {maximumFractionDigits:0});
 
 /* ---------- weather codes & icons ---------- */
 const WMO = {
@@ -339,7 +445,7 @@ function renderWeather(){
   const wx = S.wx; if (!wx) return;
   const cur = wx.current, d = wx.daily;
   const [label, kind] = wmo(cur.weather_code);
-  $('temp').innerHTML = esc(T(cur.temperature_2m)) + '<sup>°' + S.unit + '</sup>';
+  $('temp').innerHTML = esc(T(cur.temperature_2m)) + '<sup>°C</sup>';
   $('heroIcon').innerHTML = icon(kind, !cur.is_day);
   $('cond').textContent = label;
   $('feels').textContent = 'Feels like ' + T(cur.apparent_temperature) + '°';
@@ -347,6 +453,8 @@ function renderWeather(){
   $('wind').textContent = W(cur.wind_speed_10m) + (cur.wind_speed_10m >= 2 ? ' ' + cardinal(cur.wind_direction_10m) : '');
   $('hum').textContent = Math.round(cur.relative_humidity_2m) + '%';
   $('rain').textContent = (d.precipitation_probability_max[0] ?? 0) + '%';
+  $('pres').textContent = cur.pressure_msl != null ? nf.format(cur.pressure_msl) + ' hPa' : '--';
+  renderAltitude();
 
   const hi = d.temperature_2m_max.slice(0,4), lo = d.temperature_2m_min.slice(0,4);
   const gMin = Math.min(...lo), gMax = Math.max(...hi), span = Math.max(1, gMax - gMin);
@@ -371,6 +479,7 @@ function renderWeather(){
       </div></div>`;
   }
   $('days').innerHTML = html;
+  renderHours();
 }
 
 function renderSun(){
@@ -402,6 +511,7 @@ function renderSun(){
   $('gPM').textContent = di.goldenPM ? `${tStr(di.goldenPM[0])} – ${tStr(di.goldenPM[1])}` : '--';
 
   drawArc(di, now, pos);
+  renderMoon(now, lat, lon);
   $('az').innerHTML = esc(Math.round(pos.az)) + '°<small>' + cardinal(pos.az) + '</small>';
   $('alt').innerHTML = esc((pos.alt >= 0 ? '' : '−') + Math.abs(pos.alt).toFixed(1)) + '°<small>' + (pos.alt >= -0.833 ? 'up' : 'set') + '</small>';
   $('posTime').textContent = 'as of ' + tStr(now);
@@ -410,6 +520,19 @@ function renderSun(){
   updateFacing(pos);
 }
 
+function renderMoon(now, lat, lon){
+  const il = moonIllum(now), mt = moonTimes(now, lat, lon), nx = nextPhases(now);
+  $('moonIcon').innerHTML = moonSVG(il.phase, il.fraction, lat < 0);
+  $('moonPhase').textContent = phaseName(il.phase);
+  const dFmt = d => d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
+  const nextTxt = (nx.full && (!nx.nw || nx.full < nx.nw)) ? `Full moon ${dFmt(nx.full)}` : nx.nw ? `New moon ${dFmt(nx.nw)}` : '';
+  const name = phaseName(il.phase), nextDate = nextTxt.replace(/^(Full|New) moon /, '');
+  const peak = nextTxt && nextTxt.startsWith(name) ? ` · Peaks ${nextDate}` : nextTxt ? ` · Next: ${nextTxt}` : '';
+  $('moonSub').textContent = `${Math.round(il.fraction*100)}% lit` + peak;
+  const none = mt.up ? 'Up all day' : 'Down all day';
+  if (mt.rise) $('mrise').innerHTML = timeHTML(mt.rise); else $('mrise').textContent = (!mt.set ? none : 'None today');
+  if (mt.set) $('mset').innerHTML = timeHTML(mt.set); else $('mset').textContent = (!mt.rise ? '--' : 'None today');
+}
 function drawArc(di, now, pos){
   const W_ = 340, H_ = 150, padL = 8, padR = 8, top = 22, bot = 22;
   const yMax = Math.max(20, Math.ceil((di.maxAlt + 8)/10)*10);
@@ -558,15 +681,16 @@ function locate(){
   return new Promise((res, rej) => {
     if (!('geolocation' in navigator)) return rej({code: 0});
     navigator.geolocation.getCurrentPosition(
-      p => res({lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy}),
-      rej, {enableHighAccuracy: false, timeout: 20000, maximumAge: 120000});
+      p => res({lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy, gpsAlt: p.coords.altitude, gpsAltAcc: p.coords.altitudeAccuracy}),
+      rej, {enableHighAccuracy: true, timeout: 20000, maximumAge: 60000});
   });
 }
 async function getWeather(lat, lon){
   const q = new URLSearchParams({
     latitude: lat.toFixed(4), longitude: lon.toFixed(4), timezone: 'auto', forecast_days: '4',
-    current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day',
-    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+    current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day,pressure_msl',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum',
+    hourly: 'temperature_2m,weather_code,precipitation,precipitation_probability,is_day'
   });
   const r = await fetch('https://api.open-meteo.com/v1/forecast?' + q);
   if (!r.ok) throw new Error('weather ' + r.status);
@@ -594,6 +718,48 @@ function renderHeader(){
   $('updated').textContent = S.fetchedAt ? 'Updated ' + tStr(new Date(S.fetchedAt)) : 'Finding your position';
   if (S.coords) $('coords').textContent = `${Math.abs(S.coords.lat).toFixed(3)}° ${S.coords.lat>=0?'N':'S'}, ${Math.abs(S.coords.lon).toFixed(3)}° ${S.coords.lon>=0?'E':'W'}`;
 }
+const mmFmt = v => v == null ? '--' : v === 0 ? '0' : v < 0.1 ? '<0.1' : v.toFixed(1);
+let hoursKey = '';
+function renderHours(){
+  const wx = S.wx, h = wx && wx.hourly;
+  const box = $('hours');
+  if (!h || !h.time){ box.innerHTML = '<div class="hr"><span class="hr-t">Loading</span></div>'; $('mmTotal').textContent = ''; return; }
+  const day = wx.daily.time[0];
+  const nowKey = (wx.current.time || '').slice(0,13);
+  const idx = [];
+  h.time.forEach((t,i) => { if (t.slice(0,10) === day) idx.push(i); });
+  const maxMm = Math.max(2, ...idx.map(i => h.precipitation[i] || 0));
+  const hFmt = new Intl.DateTimeFormat(undefined, {hour:'numeric'});
+  let html = '', total = 0, rest = 0, nowSeen = false;
+  for (const i of idx){
+    const t = h.time[i], mm = h.precipitation[i] ?? 0, pop = h.precipitation_probability ? h.precipitation_probability[i] : null;
+    const isNow = t.slice(0,13) === nowKey; if (isNow) nowSeen = true;
+    const past = !nowSeen;
+    total += mm; if (!past) rest += mm;
+    const label = isNow ? 'Now' : hFmt.format(new Date(t + ':00')).replace(/\s/g,'');
+    const [lab, kind] = wmo(h.weather_code[i]);
+    const ht = mm > 0 ? Math.max(6, mm/maxMm*100) : 0;
+    html += `<div class="hr${past ? ' past' : ''}${isNow ? ' now' : ''}" ${isNow ? 'id="hrNow"' : ''} aria-label="${esc(label)}: ${T(h.temperature_2m[i])}°C, ${esc(lab)}, ${mmFmt(mm)} mm">
+      <span class="hr-t">${esc(label)}</span>
+      <svg class="wx" viewBox="0 0 32 32" aria-hidden="true">${icon(kind, h.is_day ? !h.is_day[i] : false)}</svg>
+      <span class="hr-temp">${T(h.temperature_2m[i])}°</span>
+      <span class="hr-pop">${pop != null && pop >= 10 ? pop + '%' : ''}</span>
+      <span class="hr-bar"><i style="height:${ht.toFixed(0)}%"></i></span>
+      <span class="hr-mm${mm === 0 ? ' dry' : ''}">${mmFmt(mm)}</span>
+    </div>`;
+  }
+  box.innerHTML = html;
+  $('mmTotal').textContent = total > 0
+    ? `${mmFmt(total)} mm today` + (rest !== total ? ` · ${mmFmt(rest)} mm still to come` : '')
+    : 'Dry all day';
+  // scroll to the current hour only when the forecast itself changes
+  const key = day + nowKey + S.fetchedAt;
+  if (key !== hoursKey){
+    hoursKey = key;
+    const n = $('hrNow');
+    box.scrollLeft = n ? Math.max(0, n.offsetLeft - box.offsetLeft - 16) : 0;
+  }
+}
 function renderAll(){ renderHeader(); renderSun(); renderWeather(); }
 
 async function refresh(){
@@ -604,7 +770,7 @@ async function refresh(){
     const moved = !S.coords || Math.hypot(c.lat - S.coords.lat, c.lon - S.coords.lon) > 0.01;
     S.coords = c;
     if (moved) S.place = null;
-    renderHeader(); renderSun();
+    renderHeader(); renderSun(); renderAltitude();
     const [wx, place] = await Promise.all([getWeather(c.lat, c.lon), moved || !S.place ? getPlace(c.lat, c.lon) : Promise.resolve(S.place)]);
     S.wx = wx; S.place = place || S.place; S.fetchedAt = Date.now();
     store.set('last', {coords: S.coords, place: S.place, wx: S.wx, fetchedAt: S.fetchedAt});
@@ -627,18 +793,23 @@ async function refresh(){
   }
 }
 
-function setUnit(u){
-  S.unit = u; store.set('unit', u);
-  $('uF').setAttribute('aria-pressed', u==='F'); $('uC').setAttribute('aria-pressed', u==='C');
-  renderWeather();
+function altitude(){
+  const c = S.coords;
+  if (c && c.gpsAlt != null && isFinite(c.gpsAlt) && (c.gpsAltAcc == null || c.gpsAltAcc <= 30))
+    return {m: c.gpsAlt, src: 'GPS' + (c.gpsAltAcc ? ' ±' + Math.round(c.gpsAltAcc) + ' m' : '')};
+  if (S.wx && S.wx.elevation != null && isFinite(S.wx.elevation)) return {m: S.wx.elevation, src: 'terrain map'};
+  return null;
+}
+function renderAltitude(){
+  const a = altitude();
+  $('elev').textContent = a ? nf.format(Math.round(a.m)) + ' m' : '--';
+  $('elev').title = a ? 'Altitude from ' + a.src : '';
+  $('altSrc').textContent = a ? ' · Altitude from ' + a.src : '';
 }
 
 /* ---------- boot ---------- */
-$('uF').onclick = () => setUnit('F');
-$('uC').onclick = () => setUnit('C');
 $('refresh').onclick = () => refresh();
 $('compassBtn').onclick = () => toggleCompass();
-setUnit(S.unit);
 
 const last = store.get('last');
 if (last && last.coords && last.wx){
