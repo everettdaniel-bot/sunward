@@ -48,6 +48,8 @@ button:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
 .place{flex:1; min-width:0}
 .place h1{font:600 20px/1.2 var(--f-display); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-wrap:balance}
 .place p{margin:2px 0 0; font-size:12.5px; color:var(--muted)}
+.place p.where{color:var(--ink); font:500 12.5px/1.3 var(--f-data); font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.flag{font-size:.95em; line-height:1}
 .chip{border:1px solid var(--line); background:var(--surface); border-radius:999px; height:36px; padding:0 12px; display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:13px}
 .chip svg{width:16px; height:16px}
 .chip.spin svg{animation:spin 1s linear infinite}
@@ -173,6 +175,15 @@ button:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
 .hr-bar i{display:block; width:100%; background:var(--cool); border-radius:4px 4px 0 0}
 .hr-mm{font:500 11.5px/1.2 var(--f-data); color:var(--ink)}
 .hr-mm.dry{color:var(--muted)}
+.hr-wind{display:flex; flex-direction:column; align-items:center; gap:1px; margin-top:6px; padding-top:6px; border-top:1px solid var(--line); width:40px}
+.hr-wind .warrow{width:14px; height:14px; color:var(--ink)}
+.hr-wind b{font:600 13px/1.1 var(--f-display)}
+.hr-wind small{font-size:10.5px; color:var(--muted); font-weight:600}
+.day-wind{display:flex; align-items:center; gap:5px; font-size:12.5px; margin-top:4px; font-variant-numeric:tabular-nums}
+.day-wind .warrow{width:13px; height:13px; flex:none}
+.day-wind .nw{white-space:nowrap}
+.day-wind{align-items:flex-start}
+.day-wind .warrow{margin-top:2px}
 .hours-key{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted); margin-top:8px}
 
 footer{font-size:11.5px; color:var(--muted); text-align:center; line-height:1.6}
@@ -185,7 +196,8 @@ footer a{color:inherit}
 <main>
   <header class="top">
     <div class="place">
-      <h1 id="place">Locating…</h1>
+      <h1><span id="place">Locating…</span> <span class="flag" id="flag"></span></h1>
+      <p class="where" id="where">&nbsp;</p>
       <p id="updated">Finding your position</p>
     </div>
     <button type="button" class="chip" id="customBtn" aria-label="Customise colours" aria-haspopup="dialog">
@@ -210,7 +222,7 @@ footer a{color:inherit}
       <div class="stat"><span>Wind</span><b id="wind">--</b></div>
       <div class="stat"><span>Humidity</span><b id="hum">--</b></div>
       <div class="stat"><span>Rain chance</span><b id="rain">--</b></div>
-      <div class="stat"><span id="altLabel">Altitude</span><b id="elev">--</b></div>
+      <div class="stat"><span>Gusts</span><b id="gust">--</b></div>
       <div class="stat"><span>Pressure</span><b id="pres">--</b></div>
     </div>
   </section>
@@ -218,7 +230,7 @@ footer a{color:inherit}
   <section class="panel" data-box="hourly" aria-label="Today hour by hour">
     <div class="panel-h"><h2>Today, hour by hour</h2><small id="mmTotal"></small></div>
     <div class="hours" id="hours"><div class="hr skeleton"><span class="hr-t">--</span></div></div>
-    <div class="hours-key"><span>Bars show precipitation in mm per hour</span><span>Swipe for more</span></div>
+    <div class="hours-key"><span>Rain in mm per hour · Wind in km/h</span><span>Swipe for more</span></div>
   </section>
 
   <section class="panel" data-box="sun" aria-label="Sunrise and sunset">
@@ -245,6 +257,11 @@ footer a{color:inherit}
     </div>
   </section>
 
+  <section class="panel" data-box="outlook" aria-label="Three day outlook">
+    <div class="panel-h"><h2>3-day outlook</h2></div>
+    <div class="days" id="days"><div class="day skeleton"><div class="day-name"><b>--</b></div></div></div>
+  </section>
+
   <section class="panel" data-box="pos" aria-label="Where the sun is now">
     <div class="panel-h"><h2>Where the sun is</h2><small id="posTime">now</small></div>
     <div class="pos">
@@ -259,13 +276,8 @@ footer a{color:inherit}
     <p class="dial-note" id="dialNote">The centre is straight overhead and the edge is the horizon. The line shows the sun's path across your sky today.</p>
   </section>
 
-  <section class="panel" data-box="outlook" aria-label="Three day outlook">
-    <div class="panel-h"><h2>3-day outlook</h2></div>
-    <div class="days" id="days"><div class="day skeleton"><div class="day-name"><b>--</b></div></div></div>
-  </section>
-
   <footer>
-    <div><span id="coords"></span><span id="altSrc"></span></div>
+    <div id="altSrc"></div>
     Weather from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Sun position calculated on your phone.
   </footer>
 </main>
@@ -493,6 +505,7 @@ function renderWeather(){
   $('wind').textContent = W(cur.wind_speed_10m) + (cur.wind_speed_10m >= 2 ? ' ' + cardinal(cur.wind_direction_10m) : '');
   $('hum').textContent = Math.round(cur.relative_humidity_2m) + '%';
   $('rain').textContent = (d.precipitation_probability_max[0] ?? 0) + '%';
+  $('gust').textContent = W(cur.wind_gusts_10m);
   $('pres').textContent = cur.pressure_msl != null ? nf.format(cur.pressure_msl) + ' hPa' : '--';
   renderAltitude();
 
@@ -515,6 +528,7 @@ function renderWeather(){
       <div class="day-body">
         <div class="day-cond"><span>${esc(lab)}</span>${p!=null && p>=10 ? `<em>${p}% chance</em>` : ''}</div>
         <div class="range"><span class="lo">${T(lo[i])}°</span><span class="bar"><i style="left:${left.toFixed(1)}%;width:${width.toFixed(1)}%"></i></span><span>${T(hi[i])}°</span></div>
+        ${d.wind_speed_10m_max ? `<div class="day-wind">${d.wind_direction_10m_dominant ? windArrow(d.wind_direction_10m_dominant[i]) : ''}<span><span class="nw">Max wind <b>${Math.round(d.wind_speed_10m_max[i])} km/h</b>${d.wind_direction_10m_dominant ? ' ' + cardinal(d.wind_direction_10m_dominant[i]) : ''}</span>${d.wind_gusts_10m_max ? ` <span class="nw">· gusts ${Math.round(d.wind_gusts_10m_max[i])} km/h</span>` : ''}</span></div>` : ''}
         <div class="day-sun">${esc(sunLine)}</div>
       </div></div>`;
   }
@@ -728,9 +742,9 @@ function locate(){
 async function getWeather(lat, lon){
   const q = new URLSearchParams({
     latitude: lat.toFixed(4), longitude: lon.toFixed(4), timezone: 'auto', forecast_days: '4',
-    current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day,pressure_msl',
-    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum',
-    hourly: 'temperature_2m,weather_code,precipitation,precipitation_probability,is_day'
+    current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day,pressure_msl',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant',
+    hourly: 'temperature_2m,weather_code,precipitation,precipitation_probability,is_day,wind_speed_10m,wind_direction_10m'
   });
   const r = await fetch('https://api.open-meteo.com/v1/forecast?' + q);
   if (!r.ok) throw new Error('weather ' + r.status);
@@ -741,9 +755,8 @@ async function getPlace(lat, lon){
     const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&localityLanguage=en`);
     if (!r.ok) return null;
     const j = await r.json();
-    const town = j.city || j.locality || '';
-    const region = (j.principalSubdivisionCode || '').split('-').pop() || j.countryCode || '';
-    return town ? (region && region !== town ? `${town}, ${region}` : town) : null;
+    const town = j.city || j.locality || j.principalSubdivision || '';
+    return town ? { town, cc: (j.countryCode || '').toUpperCase(), sub: (j.principalSubdivisionCode || '').toUpperCase(), country: j.countryName || '' } : null;
   } catch(e){ return null; }
 }
 function notice(title, body, retry){
@@ -753,10 +766,35 @@ function notice(title, body, retry){
   n.hidden = false;
   if (retry) $('retry').onclick = () => refresh();
 }
+function flagFor(cc, sub){
+  // England, Scotland and Wales have their own flags on iPhone
+  const tag = {'GB-ENG':'eng','GB-SCT':'sct','GB-WLS':'wls'}[sub];
+  if (tag) return String.fromCodePoint(0x1F3F4, ...[...('gb' + tag)].map(c => 0xE0000 + c.charCodeAt(0)), 0xE007F);
+  if (!/^[A-Z]{2}$/.test(cc || '')) return '';
+  return String.fromCodePoint(...[...cc].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+}
+const fmtCoord = (v, pos, neg) => `${Math.abs(v).toFixed(4)}° ${v >= 0 ? pos : neg}`;
 function renderHeader(){
-  $('place').textContent = S.place || (S.coords ? `${S.coords.lat.toFixed(3)}°, ${S.coords.lon.toFixed(3)}°` : 'Locating…');
+  const pl = S.place;
+  $('place').textContent = pl ? pl.town : (S.coords ? 'Your location' : 'Locating…');
+  const f = pl ? flagFor(pl.cc, pl.sub) : '';
+  $('flag').textContent = f;
+  $('flag').title = pl ? (pl.country || pl.cc) : '';
+  $('flag').setAttribute('aria-label', pl ? (pl.country || pl.cc) : '');
+  if (S.coords){
+    const a = altitude();
+    $('where').textContent = `${fmtCoord(S.coords.lat,'N','S')}, ${fmtCoord(S.coords.lon,'E','W')}` + (a ? ` · ${nf.format(Math.round(a.m))} m` : '');
+    $('where').title = a ? 'Altitude from ' + a.src : '';
+  }
   $('updated').textContent = S.fetchedAt ? 'Updated ' + tStr(new Date(S.fetchedAt)) : 'Finding your position';
-  if (S.coords) $('coords').textContent = `${Math.abs(S.coords.lat).toFixed(3)}° ${S.coords.lat>=0?'N':'S'}, ${Math.abs(S.coords.lon).toFixed(3)}° ${S.coords.lon>=0?'E':'W'}`;
+}
+// arrow points the way the wind is blowing (direction given is where it comes from)
+function windArrow(dir){
+  return `<svg class="warrow" viewBox="0 0 16 16" aria-hidden="true" style="transform:rotate(${(dir + 180) % 360}deg)"><path d="M8 1.5 12.5 13 8 10.4 3.5 13z" fill="currentColor"/></svg>`;
+}
+function windCell(spd, dir){
+  if (spd == null) return '';
+  return `<span class="hr-wind">${dir != null ? windArrow(dir) : ''}<b>${Math.round(spd)}</b><small>${dir != null && spd >= 2 ? cardinal(dir) : 'calm'}</small></span>`;
 }
 const mmFmt = v => v == null ? '--' : v === 0 ? '0' : v < 0.1 ? '<0.1' : v.toFixed(1);
 let hoursKey = '';
@@ -786,6 +824,7 @@ function renderHours(){
       <span class="hr-pop">${pop != null && pop >= 10 ? pop + '%' : ''}</span>
       <span class="hr-bar"><i style="height:${ht.toFixed(0)}%"></i></span>
       <span class="hr-mm${mm === 0 ? ' dry' : ''}">${mmFmt(mm)}</span>
+      ${windCell(h.wind_speed_10m ? h.wind_speed_10m[i] : null, h.wind_direction_10m ? h.wind_direction_10m[i] : null)}
     </div>`;
   }
   box.innerHTML = html;
@@ -842,9 +881,8 @@ function altitude(){
 }
 function renderAltitude(){
   const a = altitude();
-  $('elev').textContent = a ? nf.format(Math.round(a.m)) + ' m' : '--';
-  $('elev').title = a ? 'Altitude from ' + a.src : '';
-  $('altSrc').textContent = a ? ' · Altitude from ' + a.src : '';
+  $('altSrc').textContent = a ? 'Altitude from ' + a.src : '';
+  renderHeader();
 }
 
 /* ---------- boot ---------- */
@@ -856,8 +894,8 @@ const BOXES = [
   {id:'hero',    name:'Current conditions',   note:'Default background follows the sun'},
   {id:'hourly',  name:'Today, hour by hour'},
   {id:'sun',     name:'Sunrise, sunset & moon'},
-  {id:'pos',     name:'Where the sun is'},
-  {id:'outlook', name:'3-day outlook'}
+  {id:'outlook', name:'3-day outlook'},
+  {id:'pos',     name:'Where the sun is'}
 ];
 S.theme = store.get('theme') || {};
 const boxEl = id => id === 'hero' ? $('hero') : document.querySelector(`[data-box="${id}"]`);
@@ -957,7 +995,7 @@ $('compassBtn').onclick = () => toggleCompass();
 
 const last = store.get('last');
 if (last && last.coords && last.wx){
-  Object.assign(S, {coords: last.coords, place: last.place, wx: last.wx, fetchedAt: last.fetchedAt});
+  Object.assign(S, {coords: last.coords, place: (last.place && typeof last.place === 'object') ? last.place : null, wx: last.wx, fetchedAt: last.fetchedAt});
   renderAll();
 }
 refresh();
